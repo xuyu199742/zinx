@@ -1,9 +1,10 @@
 package znet
 
 import (
+	"errors"
 	"fmt"
 	"net"
-	"zinx/v1/ziface"
+	"zinx/ziface"
 )
 
 type Server struct {
@@ -28,10 +29,23 @@ func NewServer(name string) ziface.IServer {
 	return s
 }
 
+func CallBackHandler(coon *net.TCPConn, data []byte, cnt int) error {
+	fmt.Println("callback handler ....")
+
+	if _, err := coon.Write(data); err != nil {
+		fmt.Println("callback write error", err)
+		return errors.New("callback handler error")
+	}
+
+	return nil
+}
+
 func (s *Server) Start() {
 	fmt.Printf("[Start] Server Listen at Ip:%s, Port:%d is start...\n", s.Name, s.Port)
 
 	go func() {
+		var cid uint32
+		cid = 0
 		//1 获取一个TCP的address
 		add, err := net.ResolveTCPAddr(s.IPVersion, fmt.Sprintf("%s:%d", s.IP, s.Port))
 		if err != nil {
@@ -44,32 +58,24 @@ func (s *Server) Start() {
 			fmt.Println("Server listen error", err)
 			return
 		}
-		fmt.Println("start Zixn server success" + s.Name + ": listen ....")
+		fmt.Println("start Zixn server success " + s.Name + ": listen ....")
 
 		//3 阻塞等待客服端连接  处理客户端读写
 		for {
 			//如果有客户端链接过来  堵塞会返回
-			coon, err := listen.Accept()
+			coon, err := listen.AcceptTCP()
 			if err != nil {
 				fmt.Println("accept coon err", err)
 				continue
 			}
 
-			//已经与客户端建立连接
-			go func() {
-				for {
-					buf := make([]byte, 512)
-					cnt, err := coon.Read(buf)
-					if err != nil {
-						fmt.Println("coon read err", err)
-						continue
-					}
-					if _, err := coon.Write(buf[:cnt]); err != nil {
-						fmt.Println("write err", err)
-						continue
-					}
-				}
-			}()
+			//将处理连接的业务方法和coon进行绑定 得到连接模块
+			newCoon := NewConnection(coon, cid, CallBackHandler)
+			cid++
+
+			//启动当前的连接业务处理
+			go newCoon.Start()
+
 		}
 	}()
 }
@@ -83,7 +89,5 @@ func (s *Server) Serve() {
 	s.Start()
 
 	//阻塞转态
-	select {
-
-	}
+	select {}
 }

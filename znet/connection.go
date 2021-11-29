@@ -3,7 +3,7 @@ package znet
 import (
 	"fmt"
 	"net"
-	"zinx/v1/ziface"
+	"zinx/ziface"
 )
 
 type Connection struct {
@@ -29,7 +29,7 @@ func NewConnection(coon *net.TCPConn, coonId uint32, callbackApi ziface.HandleFu
 }
 
 func (c *Connection) Start() {
-	fmt.Printf("connection starting.... current coonID = %d", c.ConnID)
+	fmt.Printf("connection starting.... current coonID = %d\n", c.ConnID)
 
 	//启动当前连接的读数据业务
 	go c.StartReader()

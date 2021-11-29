@@ -1,6 +1,6 @@
 package main
 
-import "zinx/v1/znet"
+import "zinx/znet"
 
 func main() {
 	s := znet.NewServer("bruce")
