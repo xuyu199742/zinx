@@ -60,7 +60,7 @@ func (s *Server) Start() {
 		}
 		fmt.Println("start Zixn server success " + s.Name + ": listen ....")
 
-		//3 阻塞等待客服端连接  处理客户端读写
+		//3 阻塞等待客户端连接  处理客户端读写
 		for {
 			//如果有客户端链接过来  堵塞会返回
 			coon, err := listen.AcceptTCP()
