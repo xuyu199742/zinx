@@ -1,0 +1,19 @@
+version: "3"
+services:
+  # server服务
+  server:
+    build:
+      context: .
+#       指定dockerfile启动容器
+      dockerfile: ./Dockerfile
+    # 自定义容器名
+    container_name: server
+    # 容器启动失败是否重启
+#    restart: always
+    # 映射端口
+    ports:
+      - '8888:8888'
+#    networks:
+#      network:
+#        # 在network网络下的容器内部的Ipv4地址
+#        ipv4_address: 177.7.0.12

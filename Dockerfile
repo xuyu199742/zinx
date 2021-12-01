@@ -1,13 +1,9 @@
-FROM golang:alpine as builder
+FROM golang:alpine
 
 LABEL MAINTAINER="Bruce"
 
-RUN go build -o server .
+WORKDIR /go/src/
 
-FROM alpine:latest
 
-WORKDIR /go/src/zinx
 
 COPY . .
-
-EXPOSE 8888
