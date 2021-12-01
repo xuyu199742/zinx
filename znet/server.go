@@ -1,7 +1,6 @@
 package znet
 
 import (
-	"errors"
 	"fmt"
 	"net"
 	"zinx/ziface"
@@ -16,29 +15,38 @@ type Server struct {
 	IPVersion string
 	//端口
 	Port int64
-}
 
+	Router ziface.IRouter
+}
 func NewServer(name string) ziface.IServer {
 	s := &Server{
 		Name:      name,
 		IP:        "0.0.0",
 		IPVersion: "tcp4",
 		Port:      8999,
+		Router:    nil,
 	}
 
 	return s
 }
 
-func CallBackHandler(coon *net.TCPConn, data []byte, cnt int) error {
-	fmt.Println("callback handler ....")
+func (s *Server) AddRouter(router ziface.IRouter)  {
+	s.Router = router
 
-	if _, err := coon.Write(data); err != nil {
-		fmt.Println("callback write error", err)
-		return errors.New("callback handler error")
-	}
-
-	return nil
+	fmt.Println("add router success")
 }
+
+//
+//func CallBackHandler(coon *net.TCPConn, data []byte, cnt int) error {
+//	fmt.Println("callback handler ....")
+//
+//	if _, err := coon.Write(data); err != nil {
+//		fmt.Println("callback write error", err)
+//		return errors.New("callback handler error")
+//	}
+//
+//	return nil
+//}
 
 func (s *Server) Start() {
 	fmt.Printf("[Start] Server Listen at Ip:%s, Port:%d is start...\n", s.Name, s.Port)
@@ -70,7 +78,7 @@ func (s *Server) Start() {
 			}
 
 			//将处理连接的业务方法和coon进行绑定 得到连接模块
-			newCoon := NewConnection(coon, cid, CallBackHandler)
+			newCoon := NewConnection(coon, cid, s.Router)
 			cid++
 
 			//启动当前的连接业务处理

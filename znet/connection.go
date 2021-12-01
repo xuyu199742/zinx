@@ -2,6 +2,7 @@ package znet
 
 import (
 	"fmt"
+	"io"
 	"net"
 	"zinx/ziface"
 )
@@ -13,18 +14,20 @@ type Connection struct {
 
 	IsClose bool //当前连接是否关闭
 
-	handlerApi ziface.HandleFunc //当前连接所绑定的处理业务方法
+	//handlerApi ziface.HandleFunc //当前连接所绑定的处理业务方法
 
 	ExitChan chan bool //告知当前连接已退出停止channel
+
+	Router ziface.IRouter
 }
 
-func NewConnection(coon *net.TCPConn, coonId uint32, callbackApi ziface.HandleFunc) *Connection {
+func NewConnection(coon *net.TCPConn, coonId uint32, router ziface.IRouter) *Connection {
 	return &Connection{
-		Conn:       coon,
-		ConnID:     coonId,
-		handlerApi: callbackApi,
-		IsClose:    false,
-		ExitChan:   make(chan bool, 1),
+		Conn:     coon,
+		ConnID:   coonId,
+		Router:   router,
+		IsClose:  false,
+		ExitChan: make(chan bool, 1),
 	}
 }
 
@@ -75,15 +78,29 @@ func (c *Connection) StartReader() {
 	for {
 		//读取客户端的数据到buf中
 		buf := make([]byte, 512)
-		cnt, err := c.Conn.Read(buf)
-		if err != nil {
+		if _, err := c.Conn.Read(buf); err != nil && err != io.EOF {
 			fmt.Println("reader buf error", err)
-			continue
+			return
 		}
-		//调用当前连接绑定的handle api
-		if err := c.handlerApi(c.Conn, buf, cnt); err != nil {
-			fmt.Printf("coonID handler api error:%s", err.Error())
-			break
+		////调用当前连接绑定的handle api
+		//if err := c.handlerApi(c.Conn, buf, cnt); err != nil {
+		//	fmt.Printf("coonID handler api error:%s", err.Error())
+		//	break
+		//}
+
+		//得到当前coon request 数据
+		req := &Request{
+			coon: c,
+			data: buf,
 		}
+
+		//执行注册绑定路由方法
+		go func(request ziface.IRequest) {
+			c.Router.PreHandle(request)
+			c.Router.Handle(request)
+			c.Router.PostHandle(request)
+		}(req)
+
+		//从路由注册绑定coon 调用router
 	}
 }
