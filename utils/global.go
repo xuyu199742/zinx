@@ -36,7 +36,7 @@ func init() {
 		MaxPackageSize: 4096,
 	}
 
-	GlobalObj.Reload()
+	//GlobalObj.Reload()
 }
 
 var GlobalObj = new(Global)
