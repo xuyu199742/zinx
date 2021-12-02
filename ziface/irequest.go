@@ -1,6 +1,7 @@
 package ziface
 
 type IRequest interface {
+
 	// GetConnection 获取当前连接
 	GetConnection() IConnection
 

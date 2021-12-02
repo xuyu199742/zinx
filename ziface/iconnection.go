@@ -3,6 +3,7 @@ package ziface
 import "net"
 
 type IConnection interface {
+
 	// Start 启动连接 让当前的连接准备开始工作
 	Start()
 
