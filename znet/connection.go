@@ -76,13 +76,15 @@ func (c *Connection) StartReader() {
 	defer fmt.Printf("coonID = %d reader is exit, remote add = %s", c.ConnID, c.Conn.RemoteAddr().String())
 	defer c.Stop()
 
+	pg := NewDataPackage()
+
 	for {
 		//读取客户端的数据到buf中
-		buf := make([]byte, utils.GlobalObj.MaxPackageSize)
-		if _, err := c.Conn.Read(buf); err != nil && err != io.EOF {
-			fmt.Println("reader buf error", err)
-			return
-		}
+		//buf := make([]byte, utils.GlobalObj.MaxPackageSize)
+		//if _, err := c.Conn.Read(buf); err != nil && err != io.EOF {
+		//	fmt.Println("reader buf error", err)
+		//	return
+		//}
 		////调用当前连接绑定的handle api
 		//if err := c.handlerApi(c.Conn, buf, cnt); err != nil {
 		//	fmt.Printf("coonID handler api error:%s", err.Error())
