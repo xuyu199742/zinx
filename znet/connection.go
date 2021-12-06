@@ -1,10 +1,10 @@
 package znet
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net"
-	"zinx/utils"
 	"zinx/ziface"
 )
 
@@ -67,7 +67,25 @@ func (c *Connection) RemoteAddr() net.Addr {
 	return c.Conn.RemoteAddr()
 }
 
-func (c *Connection) Send(bytes []byte) error {
+func (c *Connection) SendMsg(msgId uint32, data []byte) error {
+	if c.IsClose == true {
+		return errors.New("connection is close when send msg")
+	}
+
+	//将data进行封包 MsgDataLen|MsgId|MsgData
+	dg := NewDataPackage()
+	binaryMsg, err := dg.Pack(NewMessage(msgId, data))
+	if err != nil {
+		fmt.Println("pack error msgId = ", msgId)
+		return errors.New("pack msg error")
+	}
+
+	//打包好的msg发送客户端
+	if _, err := c.Conn.Write(binaryMsg); err != nil {
+		fmt.Println("write msgId = ", msgId, "error = ", err)
+		return errors.New("conn write err")
+	}
+
 	return nil
 }
 
@@ -76,11 +94,37 @@ func (c *Connection) StartReader() {
 	defer fmt.Printf("coonID = %d reader is exit, remote add = %s", c.ConnID, c.Conn.RemoteAddr().String())
 	defer c.Stop()
 
-	pg := NewDataPackage()
-
 	for {
-		//读取客户端的数据到buf中
-		//buf := make([]byte, utils.GlobalObj.MaxPackageSize)
+
+		//创建一个拆包解包对象
+		pg := NewDataPackage()
+
+		//读取客户端Msg Head 二进制流 8个字节
+		headData := make([]byte, pg.GetHeadLen())
+		if _, err := io.ReadFull(c.GetTCPConnection(), headData); err != nil {
+			fmt.Println("read head err", err)
+			break
+		}
+
+		//拆包 得到msgId和msgData 放在msg消息中
+		msg, err := pg.UnPack(headData)
+		if err != nil {
+			fmt.Println("msg unpack err", err)
+			break
+		}
+
+		//跟你dataLen  再次读取Data 放在msg.Data中
+		var data []byte
+		if msg.GetMsgLen() > 0 {
+			data = make([]byte, msg.GetMsgLen())
+
+			if _, err := io.ReadFull(c.GetTCPConnection(), data); err != nil {
+				fmt.Println("unpack data err", err)
+				break
+			}
+		}
+		msg.SetData(data)
+
 		//if _, err := c.Conn.Read(buf); err != nil && err != io.EOF {
 		//	fmt.Println("reader buf error", err)
 		//	return
@@ -94,7 +138,7 @@ func (c *Connection) StartReader() {
 		//得到当前coon request 数据
 		req := &Request{
 			coon: c,
-			data: buf,
+			msg:  msg,
 		}
 
 		//执行注册绑定路由方法
