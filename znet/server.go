@@ -33,7 +33,7 @@ func NewServer() ziface.IServer {
 }
 
 func (s *Server) AddRouter(msgId uint32, router ziface.IRouter) {
-	fmt.Println("add router success")
+	fmt.Println("add router success msgId = ", msgId)
 
 	s.MsgHandler.AddRouter(msgId, router)
 }

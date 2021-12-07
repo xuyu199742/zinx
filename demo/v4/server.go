@@ -11,8 +11,8 @@ type PingRouter struct {
 }
 
 func main() {
-	s := znet.NewServer("bruce 4444 ")
-	s.AddRouter(&PingRouter{})
+	s := znet.NewServer()
+	s.AddRouter(0, &PingRouter{})
 	s.Serve()
 }
 

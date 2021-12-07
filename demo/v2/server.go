@@ -3,6 +3,6 @@ package main
 import "zinx/znet"
 
 func main() {
-	s := znet.NewServer("bruce 2222 ")
+	s := znet.NewServer()
 	s.Serve()
 }
