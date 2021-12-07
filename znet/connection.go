@@ -19,16 +19,16 @@ type Connection struct {
 
 	ExitChan chan bool //告知当前连接已退出停止channel
 
-	Router ziface.IRouter
+	MsgHandler ziface.IMsgHandler
 }
 
-func NewConnection(coon *net.TCPConn, coonId uint32, router ziface.IRouter) *Connection {
+func NewConnection(coon *net.TCPConn, coonId uint32, msgHandler ziface.IMsgHandler) *Connection {
 	return &Connection{
-		Conn:     coon,
-		ConnID:   coonId,
-		Router:   router,
-		IsClose:  false,
-		ExitChan: make(chan bool, 1),
+		Conn:       coon,
+		ConnID:     coonId,
+		MsgHandler: msgHandler,
+		IsClose:    false,
+		ExitChan:   make(chan bool, 1),
 	}
 }
 
@@ -142,12 +142,13 @@ func (c *Connection) StartReader() {
 		}
 
 		//执行注册绑定路由方法
-		go func(request ziface.IRequest) {
-			c.Router.PreHandle(request)
-			c.Router.Handle(request)
-			c.Router.PostHandle(request)
-		}(req)
+		//go func(request ziface.IRequest) {
+		//	c.Router.PreHandle(request)
+		//	c.Router.Handle(request)
+		//	c.Router.PostHandle(request)
+		//}(req)
 
 		//从路由注册绑定coon 调用router
+		go c.MsgHandler.DoMsgHandler(req)
 	}
 }

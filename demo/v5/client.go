@@ -52,7 +52,7 @@ func main() {
 				break
 			}
 
-			fmt.Println("------>> msgId: ", msg.Id, "dataLen = ", msg.DataLen, "data = ", string(msg.Data))
+			fmt.Println("------> msgId: ", msg.Id, "dataLen = ", msg.DataLen, "data = ", string(msg.Data))
 		}
 
 		//cup 堵塞

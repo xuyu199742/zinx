@@ -17,25 +17,25 @@ type Server struct {
 	//端口
 	Port int
 
-	Router ziface.IRouter
+	MsgHandler ziface.IMsgHandler
 }
 
-func NewServer(name string) ziface.IServer {
+func NewServer() ziface.IServer {
 	s := &Server{
-		Name:      utils.GlobalObj.Name,
-		IP:        utils.GlobalObj.Host,
-		IPVersion: "tcp4",
-		Port:      utils.GlobalObj.TcpPort,
-		Router:    nil,
+		Name:       utils.GlobalObj.Name,
+		IP:         utils.GlobalObj.Host,
+		IPVersion:  "tcp4",
+		Port:       utils.GlobalObj.TcpPort,
+		MsgHandler: NewMsgHandler(),
 	}
 
 	return s
 }
 
-func (s *Server) AddRouter(router ziface.IRouter) {
-	s.Router = router
-
+func (s *Server) AddRouter(msgId uint32, router ziface.IRouter) {
 	fmt.Println("add router success")
+
+	s.MsgHandler.AddRouter(msgId, router)
 }
 
 //
@@ -80,7 +80,7 @@ func (s *Server) Start() {
 			}
 
 			//将处理连接的业务方法和coon进行绑定 得到连接模块
-			newCoon := NewConnection(coon, cid, s.Router)
+			newCoon := NewConnection(coon, cid, s.MsgHandler)
 			cid++
 
 			//启动当前的连接业务处理
