@@ -15,9 +15,9 @@ type Connection struct {
 
 	IsClose bool //当前连接是否关闭
 
-	//handlerApi ziface.HandleFunc //当前连接所绑定的处理业务方法
-
 	ExitChan chan bool //告知当前连接已退出停止channel
+
+	MsgChan chan []byte
 
 	MsgHandler ziface.IMsgHandler
 }
@@ -29,6 +29,7 @@ func NewConnection(coon *net.TCPConn, coonId uint32, msgHandler ziface.IMsgHandl
 		MsgHandler: msgHandler,
 		IsClose:    false,
 		ExitChan:   make(chan bool, 1),
+		MsgChan:    make(chan []byte),
 	}
 }
 
@@ -38,7 +39,9 @@ func (c *Connection) Start() {
 	//启动当前连接的读数据业务
 	go c.StartReader()
 
-	//TODO 启动从当前连接写的业务
+	// 启动从当前连接写的业务
+	go c.StartWrite()
+
 }
 
 func (c *Connection) Stop() {
@@ -47,12 +50,14 @@ func (c *Connection) Stop() {
 		return
 	}
 	c.IsClose = true
+	c.ExitChan <- true
 
 	//关闭socket连接
 	c.Conn.Close()
 
 	//回收channel资源
 	close(c.ExitChan)
+	close(c.MsgChan)
 }
 
 func (c *Connection) GetTCPConnection() *net.TCPConn {
@@ -81,10 +86,7 @@ func (c *Connection) SendMsg(msgId uint32, data []byte) error {
 	}
 
 	//打包好的msg发送客户端
-	if _, err := c.Conn.Write(binaryMsg); err != nil {
-		fmt.Println("write msgId = ", msgId, "error = ", err)
-		return errors.New("conn write err")
-	}
+	c.MsgChan <- binaryMsg
 
 	return nil
 }
@@ -103,6 +105,7 @@ func (c *Connection) StartReader() {
 		headData := make([]byte, pg.GetHeadLen())
 		if _, err := io.ReadFull(c.GetTCPConnection(), headData); err != nil {
 			fmt.Println("read head err", err)
+			c.ExitChan <- true
 			break
 		}
 
@@ -125,30 +128,27 @@ func (c *Connection) StartReader() {
 		}
 		msg.SetData(data)
 
-		//if _, err := c.Conn.Read(buf); err != nil && err != io.EOF {
-		//	fmt.Println("reader buf error", err)
-		//	return
-		//}
-		////调用当前连接绑定的handle api
-		//if err := c.handlerApi(c.Conn, buf, cnt); err != nil {
-		//	fmt.Printf("coonID handler api error:%s", err.Error())
-		//	break
-		//}
-
 		//得到当前coon request 数据
 		req := &Request{
 			coon: c,
 			msg:  msg,
 		}
 
-		//执行注册绑定路由方法
-		//go func(request ziface.IRequest) {
-		//	c.Router.PreHandle(request)
-		//	c.Router.Handle(request)
-		//	c.Router.PostHandle(request)
-		//}(req)
-
 		//从路由注册绑定coon 调用router
 		go c.MsgHandler.DoMsgHandler(req)
+	}
+}
+
+func (c *Connection) StartWrite() {
+	for {
+		select {
+		case data := <-c.MsgChan:
+			if _, err := c.Conn.Write(data); err != nil {
+				fmt.Println("start write error", err)
+				return
+			}
+		case <-c.ExitChan:
+			return
+		}
 	}
 }
