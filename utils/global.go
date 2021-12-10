@@ -14,6 +14,8 @@ type Global struct {
 	Version        string
 	MaxConn        int
 	MaxPackageSize uint32
+	WorkPoolSize   uint32
+	MaxWorkTaskLen uint32
 }
 
 func (g *Global) Reload() {
@@ -34,6 +36,8 @@ func init() {
 		Version:        "V0.6",
 		MaxConn:        100,
 		MaxPackageSize: 4096,
+		WorkPoolSize:   10,
+		MaxWorkTaskLen: 1024,
 	}
 
 	//GlobalObj.Reload()

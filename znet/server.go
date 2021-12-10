@@ -54,6 +54,7 @@ func (s *Server) Start() {
 	fmt.Printf("[Start] Server Listen at Ip:%s, Port:%d is start...\n", s.Name, s.Port)
 
 	go func() {
+		s.MsgHandler.StartWorkPool()
 		var cid uint32
 		cid = 0
 		//1 获取一个TCP的address

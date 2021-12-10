@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"zinx/utils"
 	"zinx/ziface"
 )
 
@@ -134,8 +135,13 @@ func (c *Connection) StartReader() {
 			msg:  msg,
 		}
 
-		//从路由注册绑定coon 调用router
-		go c.MsgHandler.DoMsgHandler(req)
+		if utils.GlobalObj.WorkPoolSize > 0 {
+			//已经开启工作池 将消息发送给worker工作池处理
+			c.MsgHandler.SenMagToTaskQueue(req)
+		} else {
+			//从路由注册绑定coon 调用router
+			go c.MsgHandler.DoMsgHandler(req)
+		}
 	}
 }
 
