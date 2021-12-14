@@ -35,7 +35,7 @@ func (c *ConnManager) Del(conn ziface.IConnection) {
 
 func (c *ConnManager) Get(connId uint32) (ziface.IConnection, error) {
 	c.connLock.RLock() //读锁
-	defer c.connLock.RLocker()
+	defer c.connLock.RUnlock()
 
 	if conn, ok := c.connections[connId]; ok {
 		return conn, nil

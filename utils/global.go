@@ -34,7 +34,7 @@ func init() {
 		Host:           "0.0.0",
 		TcpPort:        8999,
 		Version:        "V0.6",
-		MaxConn:        100,
+		MaxConn:        1,
 		MaxPackageSize: 4096,
 		WorkPoolSize:   10,
 		MaxWorkTaskLen: 1024,

@@ -8,16 +8,12 @@ import (
 )
 
 type Server struct {
-	//名称
-	Name string
-	//ip地址
-	IP string
-	//端口版本
-	IPVersion string
-	//端口
-	Port int
-
+	Name       string
+	IP         string
+	IPVersion  string
+	Port       int
 	MsgHandler ziface.IMsgHandler
+	ConnMgr    ziface.IConnManager
 }
 
 func NewServer() ziface.IServer {
@@ -27,6 +23,7 @@ func NewServer() ziface.IServer {
 		IPVersion:  "tcp4",
 		Port:       utils.GlobalObj.TcpPort,
 		MsgHandler: NewMsgHandler(),
+		ConnMgr:    NewConnManager(),
 	}
 
 	return s
@@ -37,18 +34,6 @@ func (s *Server) AddRouter(msgId uint32, router ziface.IRouter) {
 
 	s.MsgHandler.AddRouter(msgId, router)
 }
-
-//
-//func CallBackHandler(coon *net.TCPConn, data []byte, cnt int) error {
-//	fmt.Println("callback handler ....")
-//
-//	if _, err := coon.Write(data); err != nil {
-//		fmt.Println("callback write error", err)
-//		return errors.New("callback handler error")
-//	}
-//
-//	return nil
-//}
 
 func (s *Server) Start() {
 	fmt.Printf("[Start] Server Listen at Ip:%s, Port:%d is start...\n", s.Name, s.Port)
@@ -80,8 +65,15 @@ func (s *Server) Start() {
 				continue
 			}
 
+			//最大连接个数
+			if s.ConnMgr.Len() >= utils.GlobalObj.MaxConn {
+				fmt.Println(" =====> to many conn maxConn = ", utils.GlobalObj.MaxConn)
+				coon.Close()
+				continue
+			}
+
 			//将处理连接的业务方法和coon进行绑定 得到连接模块
-			newCoon := NewConnection(coon, cid, s.MsgHandler)
+			newCoon := NewConnection(coon, cid, s.MsgHandler, s)
 			cid++
 
 			//启动当前的连接业务处理
@@ -93,6 +85,11 @@ func (s *Server) Start() {
 
 func (s *Server) Stop() {
 	//TODO 将服务的资源、状态或者一些已经开辟的链接信息进行停止或者回收
+	s.ConnMgr.Clear()
+}
+
+func (s *Server) GetConnMgr() ziface.IConnManager {
+	return s.ConnMgr
 }
 
 func (s *Server) Serve() {

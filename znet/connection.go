@@ -10,7 +10,8 @@ import (
 )
 
 type Connection struct {
-	Conn *net.TCPConn //当前连接socket TCP套接字
+	TcpServer ziface.IServer
+	Conn      *net.TCPConn //当前连接socket TCP套接字
 
 	ConnID uint32 //连接id
 
@@ -23,15 +24,19 @@ type Connection struct {
 	MsgHandler ziface.IMsgHandler
 }
 
-func NewConnection(coon *net.TCPConn, coonId uint32, msgHandler ziface.IMsgHandler) *Connection {
-	return &Connection{
+func NewConnection(coon *net.TCPConn, coonId uint32, msgHandler ziface.IMsgHandler, server ziface.IServer) *Connection {
+	c := &Connection{
 		Conn:       coon,
 		ConnID:     coonId,
 		MsgHandler: msgHandler,
 		IsClose:    false,
 		ExitChan:   make(chan bool, 1),
 		MsgChan:    make(chan []byte),
+		TcpServer:  server,
 	}
+	server.GetConnMgr().Add(c)
+
+	return c
 }
 
 func (c *Connection) Start() {
@@ -55,6 +60,8 @@ func (c *Connection) Stop() {
 
 	//关闭socket连接
 	c.Conn.Close()
+
+	c.TcpServer.GetConnMgr().Del(c)
 
 	//回收channel资源
 	close(c.ExitChan)
